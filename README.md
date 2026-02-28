@@ -13,6 +13,18 @@
 
 ---
 
+## 📖 Lore & World Building
+
+*Chronicles of a Fallen World: Book I* is set in a desolate universe where the Great Balance has fractured. The narrative centers on **Dagon**, a champion struggling with the inherited power of the **Blight**.
+
+- **The Prophecies of the Dying Light**: Ancient visions foretelling the cosmic unraveling and the rise of the Void.
+- **The Blight Magic & Corruption System**: A deep, risk-reward mechanic where power comes at the cost of one's own essence.
+- **The Path of Fates**: A branching skill tree where players must choose between stability and chaotic power.
+
+For a full breakdown of the game's lore, visions, and mechanics, see the [**CODEX.md**](./CODEX.md).
+
+---
+
 ## Getting Started
 
 ### Prerequisites
