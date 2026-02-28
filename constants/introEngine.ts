@@ -982,18 +982,6 @@ function gameLoop() {
 
   if (healthShown) updateHUD();
 
-  ctx.fillStyle = 'red';
-  ctx.font = '16px monospace';
-  ctx.fillText('DEBUG: Phase=' + phase + ' Timer=' + phaseTimer, 20, 30);
-  ctx.fillText('Assets: ' + assetsLoaded + ' / ' + assetsTotal, 20, 50);
-  ctx.fillText('W=' + W + ' H=' + H + ' Fade=' + globalFade, 20, 70);
-  
-  var bgRdy = imgReady('cryptBg');
-  var bgImg = IMG.cryptBg;
-  var bgSizeText = 'N/A';
-  if (bgImg) bgSizeText = bgImg.naturalWidth + 'x' + bgImg.naturalHeight;
-  ctx.fillText('cryptBg: ready=' + bgRdy + ' size=' + bgSizeText, 20, 90);
-
   requestAnimationFrame(gameLoop);
 }
 
