@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Asset } from 'expo-asset';
+import * as ScreenOrientation from 'expo-screen-orientation';
 import { createGameHTML } from '@/constants/gameEngine';
 import { createIntroHTML } from '@/constants/introEngine';
 import { useGame } from '@/contexts/GameContext';
@@ -233,6 +234,18 @@ export default function GameScreen() {
     const [gameAssetUrls, setGameAssetUrls] = useState<Record<string, string>>({});
     const [introAssetUrls, setIntroAssetUrls] = useState<Record<string, string>>({});
     const [gamePhase, setGamePhase] = useState<GamePhase>('intro');
+
+    // Lock to landscape when screen mounts, unlock when leaving
+    useEffect(() => {
+        if (Platform.OS !== 'web') {
+            ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
+        }
+        return () => {
+            if (Platform.OS !== 'web') {
+                ScreenOrientation.unlockAsync();
+            }
+        };
+    }, []);
 
     useEffect(() => {
         async function loadAssets() {
@@ -465,10 +478,14 @@ const styles = StyleSheet.create({
     root: {
         flex: 1,
         backgroundColor: '#000',
+        width: '100%',
+        height: '100%',
     },
     webview: {
         flex: 1,
         backgroundColor: '#000',
+        width: '100%',
+        height: '100%',
     },
     loadingOverlay: {
         ...StyleSheet.absoluteFillObject,

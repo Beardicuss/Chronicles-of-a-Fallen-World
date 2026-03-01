@@ -1,6 +1,7 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
-import { Swords, Shield } from 'lucide-react-native';
+import { Swords } from 'lucide-react-native';
+import { Shield } from 'lucide-react-native';
 
 export default function TabLayout() {
     return (
