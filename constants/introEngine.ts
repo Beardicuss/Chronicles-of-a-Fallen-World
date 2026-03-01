@@ -7,9 +7,10 @@ export function createIntroHTML(assetUrls: Record<string, string>): string {
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html, body { width: 100%; height: 100%; overflow: hidden; background: #000; touch-action: none; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
-canvas { display: block; position: fixed; top: 0; left: 0; }
+#game-root { position: fixed; top: 0; left: 0; transform-origin: top left; }
+canvas { display: block; position: absolute; top: 0; left: 0; }
 #narrative-overlay {
-  position: fixed; inset: 0; z-index: 30; pointer-events: none;
+  position: absolute; inset: 0; z-index: 30; pointer-events: none;
   display: flex; align-items: center; justify-content: center;
 }
 #narrative-text {
@@ -22,7 +23,7 @@ canvas { display: block; position: fixed; top: 0; left: 0; }
 #narrative-text.visible { color: rgba(200,180,160,0.85); }
 #narrative-text.fade-out { color: rgba(200,180,160,0); }
 #prompt-text {
-  position: fixed; bottom: 22%; left: 50%; transform: translateX(-50%);
+  position: absolute; bottom: 22%; left: 50%; transform: translateX(-50%);
   color: rgba(200,160,80,0); font-size: 11px; font-family: Georgia, serif;
   letter-spacing: 4px; text-transform: uppercase; z-index: 30;
   pointer-events: none; transition: color 0.8s ease;
@@ -35,7 +36,7 @@ canvas { display: block; position: fixed; top: 0; left: 0; }
   50% { opacity: 1; }
 }
 #hud-intro {
-  position: fixed; top: 0; left: 0; right: 0; padding: 10px 14px;
+  position: absolute; top: 0; left: 0; right: 0; padding: 10px 14px;
   z-index: 20; pointer-events: none; opacity: 0; transition: opacity 1s ease;
   background: linear-gradient(180deg, rgba(3,3,6,0.7) 0%, rgba(3,3,6,0) 100%);
 }
@@ -55,7 +56,7 @@ canvas { display: block; position: fixed; top: 0; left: 0; }
   letter-spacing: 2px; margin-left: 8px; text-transform: uppercase;
 }
 #touch-controls-intro {
-  position: fixed; bottom: 0; left: 0; right: 0; height: 48%; pointer-events: none; z-index: 10;
+  position: absolute; bottom: 0; left: 0; right: 0; height: 48%; pointer-events: none; z-index: 10;
   opacity: 0; transition: opacity 0.8s ease;
 }
 #touch-controls-intro.visible { pointer-events: auto; opacity: 1; }
@@ -90,7 +91,7 @@ canvas { display: block; position: fixed; top: 0; left: 0; }
 }
 .btn-examine.active { background: rgba(180,130,50,0.4); }
 #flash-overlay {
-  position: fixed; inset: 0; z-index: 50; pointer-events: none;
+  position: absolute; inset: 0; z-index: 50; pointer-events: none;
   background: rgba(107,10,24,0); transition: background 0.1s ease;
 }
 #flash-overlay.flash { background: rgba(107,10,24,0.3); }
@@ -98,6 +99,7 @@ canvas { display: block; position: fixed; top: 0; left: 0; }
 </style>
 </head>
 <body>
+<div id="game-root">
 
 <div id="narrative-overlay">
   <div id="narrative-text"></div>
@@ -145,21 +147,55 @@ window.onerror = function(message, source, lineno, colno, error) {
 };
 
 // ─── FIX: Use screen dimensions for mobile, fallback to window ───────────────
-// On mobile WebView, window.innerWidth/Height may be wrong before orientation settles.
-// We pick the LARGER of the two dimensions for width (landscape) and smaller for height.
-var rawW = window.innerWidth  || document.documentElement.clientWidth  || 320;
-var rawH = window.innerHeight || document.documentElement.clientHeight || 240;
-// Force landscape: width should always be the longer side
-var W = Math.max(rawW, rawH);
-var H = Math.min(rawW, rawH);
+var W = 800;
+var H = 450;
 
 var canvas = document.createElement('canvas');
 canvas.width  = W;
 canvas.height = H;
-canvas.style.width  = W + 'px';
-canvas.style.height = H + 'px';
-document.body.insertBefore(canvas, document.body.firstChild);
+canvas.style.position = 'absolute';
+canvas.style.top  = '0';
+canvas.style.left = '0';
+document.getElementById('game-root').insertBefore(canvas, document.getElementById('game-root').firstChild);
 var ctx = canvas.getContext('2d');
+
+var gameRoot = document.getElementById('game-root');
+
+function reinitCanvas() {
+  var ww = window.innerWidth  || document.documentElement.clientWidth  || screen.height;
+  var wh = window.innerHeight || document.documentElement.clientHeight || screen.width;
+  var sw = screen.width  || ww;
+  var sh = screen.height || wh;
+  var allW = Math.max(ww, wh, sw, sh);
+  var allH = Math.min(ww, wh, sw, sh);
+  W = allW;
+  H = allH;
+  canvas.width        = W;
+  canvas.height       = H;
+  canvas.style.width  = W + 'px';
+  canvas.style.height = H + 'px';
+  gameRoot.style.width  = W + 'px';
+  gameRoot.style.height = H + 'px';
+  GROUND_Y   = Math.round(H * 0.83);
+  ROOM_LEFT  = W * 0.1;
+  ROOM_RIGHT = W * 1.0;
+  COFFIN_X   = Math.round(W * 0.1);
+  DOOR_X     = ROOM_RIGHT - 300;
+  PLAYER_H   = Math.round(52 * PLAYER_SCALE);
+  PLAYER_W   = Math.round(24 * PLAYER_SCALE);
+  if (typeof player !== 'undefined' && player) {
+    player.y = GROUND_Y - PLAYER_H;
+    player.w = PLAYER_W;
+    player.h = PLAYER_H;
+  }
+  if (typeof mistParticles !== 'undefined') {
+    for (var mi = 0; mi < mistParticles.length; mi++) {
+      mistParticles[mi].y = GROUND_Y - 20 + Math.random() * 60;
+    }
+  }
+}
+setTimeout(reinitCanvas, 100);
+setTimeout(reinitCanvas, 400);
 
 var IMG = { rise: [], walk: [], idle: [], idle2: [] };
 var ASSET_URLS = JSON.parse('${JSON.stringify(assetUrls).replace(/'/g, "\\'")}');
@@ -838,36 +874,14 @@ function gameLoop() {
 
 // ─── RESIZE: recalculate everything on orientation change ────────────────────
 window.addEventListener('resize', function() {
-  var rw = window.innerWidth  || document.documentElement.clientWidth;
-  var rh = window.innerHeight || document.documentElement.clientHeight;
-  W = Math.max(rw, rh);
-  H = Math.min(rw, rh);
-  canvas.width        = W;
-  canvas.height       = H;
-  canvas.style.width  = W + 'px';
-  canvas.style.height = H + 'px';
-
-  // Recalculate all layout constants
-  GROUND_Y   = Math.round(H * 0.83);
-  ROOM_LEFT  = W * 0.1;
-  ROOM_RIGHT = W * 1.0;
-  COFFIN_X   = Math.round(W * 0.1);
-  DOOR_X     = ROOM_RIGHT - 300;
-  PLAYER_H   = Math.round(52 * PLAYER_SCALE);
-  PLAYER_W   = Math.round(24 * PLAYER_SCALE);
-  player.y   = GROUND_Y - PLAYER_H;
-  player.w   = PLAYER_W;
-  player.h   = PLAYER_H;
-
-  // Reposition mist
-  for (var mi = 0; mi < mistParticles.length; mi++) {
-    mistParticles[mi].y = GROUND_Y - 20 + Math.random() * 60;
-  }
+  reinitCanvas();
 });
 
 setupControls();
+reinitCanvas(); // re-read dimensions now that everything is declared
 requestAnimationFrame(gameLoop);
 </script>
+</div><!-- #game-root -->
 </body>
 </html>
 `;

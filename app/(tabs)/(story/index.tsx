@@ -12,6 +12,7 @@ import { Asset } from 'expo-asset';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import { createGameHTML } from '@/constants/gameEngine';
 import { createIntroHTML } from '@/constants/introEngine';
+import { createMenuHTML } from '@/constants/menuEngine';
 import { useGame } from '@/contexts/GameContext';
 
 let WebView: any = null;
@@ -222,13 +223,13 @@ function resolveAssetUri(mod: number): string {
     }
 }
 
-type GamePhase = 'intro' | 'game';
+type GamePhase = 'intro' | 'menu' | 'game';
 
 export default function GameScreen() {
     const insets = useSafeAreaInsets();
     const { updateBattleStats, makeChoice } = useGame();
     const webViewRef = useRef<any>(null);
-    const [loading, setLoading] = useState<boolean>(true);
+    const [loading, setLoading] = useState<boolean>(false);
     const [webError, setWebError] = useState<boolean>(false);
     const [assetsReady, setAssetsReady] = useState<boolean>(false);
     const [gameAssetUrls, setGameAssetUrls] = useState<Record<string, string>>({});
@@ -308,6 +309,11 @@ export default function GameScreen() {
         return createIntroHTML(introAssetUrls);
     }, [assetsReady, introAssetUrls]);
 
+    const menuHtml = useMemo(() => {
+        if (!assetsReady) return null;
+        return createMenuHTML(gameAssetUrls);
+    }, [assetsReady, gameAssetUrls]);
+
     const gameHtml = useMemo(() => {
         if (!assetsReady) return null;
         return createGameHTML(gameAssetUrls);
@@ -317,6 +323,14 @@ export default function GameScreen() {
         setLoading(false);
         console.log('[GameScreen] WebView loaded -', gamePhase);
     }, [gamePhase]);
+
+    // Fallback: clear loading after 3s in case onLoadEnd never fires (Android quirk)
+    useEffect(() => {
+        if (loading) {
+            const t = setTimeout(() => setLoading(false), 3000);
+            return () => clearTimeout(t);
+        }
+    }, [loading, gamePhase]);
 
     const handleError = useCallback(() => {
         setWebError(true);
@@ -328,7 +342,9 @@ export default function GameScreen() {
         try {
             const data = JSON.parse(event.nativeEvent?.data || '{}');
 
-            if (data.type === 'ERROR') {
+            if (data.type === "DEBUG_DIMS") { console.log("[DIMS]", JSON.stringify(data)); }
+
+            if (data.type === "ERROR") {
                 console.log('[GameScreen] WebView Error:', data);
             }
 
@@ -337,10 +353,21 @@ export default function GameScreen() {
                 updateBattleStats(data.payload.health, data.payload.stamina);
             }
 
-            // Handle Intro Transition
+            // Handle Intro Transition → Menu
             if (data.type === 'INTRO_COMPLETE') {
-                console.log('[GameScreen] Intro complete, transitioning to game');
-                setLoading(true);
+                console.log('[GameScreen] Intro complete, going to menu');
+                setGamePhase('menu');
+            }
+
+            // New Game from menu → game
+            if (data.type === 'NEW_GAME') {
+                console.log('[GameScreen] New game, slot:', data.slot);
+                setGamePhase('game');
+            }
+
+            // Load Save from menu → game
+            if (data.type === 'LOAD_SAVE') {
+                console.log('[GameScreen] Loading save slot:', data.slot);
                 setGamePhase('game');
             }
 
@@ -360,8 +387,10 @@ export default function GameScreen() {
                 console.log('[GameScreen] Web iframe Error:', data);
             }
             if (data.type === 'INTRO_COMPLETE') {
-                console.log('[GameScreen] Intro complete (web), transitioning to game');
-                setLoading(true);
+                console.log('[GameScreen] Intro complete (web), going to menu');
+                setGamePhase('menu');
+            }
+            if (data.type === 'NEW_GAME' || data.type === 'LOAD_SAVE') {
                 setGamePhase('game');
             }
             if (data.type === 'SYNC_STATS') {
@@ -377,7 +406,7 @@ export default function GameScreen() {
         }
     }, [handleWebMessage]);
 
-    const currentHtml = gamePhase === 'intro' ? introHtml : gameHtml;
+    const currentHtml = gamePhase === 'intro' ? introHtml : gamePhase === 'menu' ? menuHtml : gameHtml;
 
     if (!assetsReady || !currentHtml) {
         return (

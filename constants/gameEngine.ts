@@ -215,11 +215,15 @@ canvas { display: block; }
 </div>
 
 <script>
-let W = window.innerWidth;
-let H = window.innerHeight;
+var _rw = window.innerWidth || screen.width || 800;
+var _rh = window.innerHeight || screen.height || 450;
+let W = Math.max(_rw, _rh);
+let H = Math.min(_rw, _rh);
 const canvas = document.createElement('canvas');
 canvas.width = W;
 canvas.height = H;
+canvas.style.width = W + 'px';
+canvas.style.height = H + 'px';
 document.body.insertBefore(canvas, document.body.firstChild);
 const ctx = canvas.getContext('2d');
 
@@ -309,7 +313,7 @@ const GRAVITY = 0.44;
 const GROUND_FRICTION = 0.78;
 const AIR_FRICTION = 0.92;
 const MAX_FALL = 12;
-const GROUND_Y = H - 60;
+let GROUND_Y = H - 60;
 
 const STATES = {
   IDLE: 'IDLE', RUN: 'RUN', JUMP: 'JUMP', FALL: 'FALL',
@@ -1738,7 +1742,7 @@ function gameLoop() {
   drawScanlines();
   drawColorGrade();
 
-  if (shakeTimer >= 0 && ctx.getTransform && ctx.getTransform().e !== 0) ctx.restore();
+  if (shakeTimer > 0) ctx.restore();
 
   updateHUD();
   requestAnimationFrame(gameLoop);
@@ -1769,10 +1773,19 @@ function respawn() {
 }
 
 window.addEventListener('resize', function() {
-  W = window.innerWidth;
-  H = window.innerHeight;
+  var rw = window.innerWidth || screen.width;
+  var rh = window.innerHeight || screen.height;
+  W = Math.max(rw, rh);
+  H = Math.min(rw, rh);
   canvas.width = W;
   canvas.height = H;
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  GROUND_Y = H - 60;
+  var offsets = [0,-100,-165,-120,-190,-110,-170,-240,-130,-200,-110,-180];
+  for (var i=0;i<platforms.length;i++) { platforms[i].y = GROUND_Y + (offsets[i]||0); }
+  platforms[0].w = W * 10;
+  player.y = GROUND_Y - player.h;
 });
 
 document.getElementById('start-btn').addEventListener('click', startGame);
@@ -1781,6 +1794,9 @@ document.getElementById('respawn-btn').addEventListener('click', respawn);
 document.getElementById('respawn-btn').addEventListener('touchstart', function(e) { e.preventDefault(); respawn(); }, { passive: false });
 
 setupTouchControls();
+// Fire resize after orientation lock settles on mobile
+setTimeout(function() { window.dispatchEvent(new Event('resize')); }, 300);
+setTimeout(function() { window.dispatchEvent(new Event('resize')); }, 800);
 requestAnimationFrame(gameLoop);
 </script>
 </body>
